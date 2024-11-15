@@ -5,7 +5,7 @@
 """
 import os
 import json
-from tools import gen_tools_desc
+from tools import gen_tools_desc,get_workdir_root
 contraints=[
     "有且仅能使用下面列出的动作",
     "你只能主动行动，在计划行动时需要考虑到这一点",
@@ -81,3 +81,5 @@ best_pratices_prompt='\n'.join([f"{idx+1}.{b}" for idx,b in enumerate(best_prati
 def gen_prompt(query,agent_scracth):
     prompt=prompt_template.format(query=query,constraints=contraints_prompt,actions=action_prompt,resources=resources_prompt,best_pratices=best_pratices_prompt,agent_scracth=agent_scracth,response_format_prompt=response_format_prompt)
     return prompt
+
+user_prompt="决定使用哪个工具"

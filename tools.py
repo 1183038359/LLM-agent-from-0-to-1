@@ -4,6 +4,7 @@
 @file:tools.py
 """
 import os
+import json
 from langchain_community.tools import TavilySearchResults
 """
 1.写文件
@@ -17,7 +18,7 @@ def _get_workdir_root():
     workdir_root=os.environ.get('WORKDIR_ROOT','/data/llm_result')
     return workdir_root
 
-workdir_root=get_workdir_root()
+workdir_root=_get_workdir_root()
 def read_file(filename):
     filename=os.path.join(_get_workdir_root(),filename)
     if not os.path.exists(filename):
@@ -141,7 +142,7 @@ def gen_tools_desc():
                 "type":info['type'],
                 "description":info['decritpion']
             })
-        args_desc=json.loads(json.dumps(args_desc),ensure_ascii=False)
+        args_desc=json.loads(json.dumps(args_desc,ensure_ascii=False))
         tool_desc=f"{idx+1}.{t['name']}:{t['description']},args:{args_desc}"
         tools_desc.append(tool_desc)  
 

@@ -95,7 +95,7 @@ def agent_exec(query,max_call_times=10):
         chat_history.append(user_msg,assistant_message)
 def main():
     max_call_times=10
-    while true:
+    while True:
         query=input("请输入prompt：")
         if query=="exit":
             break
