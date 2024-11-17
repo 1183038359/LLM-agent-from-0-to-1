@@ -1,6 +1,10 @@
 import time
 from tools import tools_map
-from prompt import gen_prompt
+from prompt import gen_prompt,user_prompt
+from model_provider import ModelProvider
+from dotenv import load_dotenv
+load_dotenv()
+mp=ModelProvider()
 def parse_thought(response):
     """
     response:
@@ -16,14 +20,14 @@ def parse_thought(response):
             "text":"thought",
             "plan":"plan",
             "criticism":"criticism",
-            "speak":"当前步骤返回给用户的总结",
+            "observation":"当前步骤返回给用户的总结",
             "reasoning":"reasoning"
         }
     }
     """
     try:
         thoughts=response.get('thoughts')
-        observation=thoughts.get('speak')
+        observation=thoughts.get('observation')
         plan=thoughts.get('plan')
         reasoning=thoughts.get('reasoning')
         criticism=thoughts.get('criticism')
@@ -55,6 +59,7 @@ def agent_exec(query,max_call_times=10):
         """
         
         prompt=gen_prompt(query,agent_scracth)
+        print(f'当前agent_scracth:{agent_scracth}')
         start_time=time.time()
         print(f'........{start_time}。开始调用大模型')
         #call_llm
@@ -62,12 +67,13 @@ def agent_exec(query,max_call_times=10):
         syss_prompt:
         user_msg,assistant_msg,history
         """
-        response=call_llm(prompt)
+        response=mp.chat(prompt,chat_history)
+
         end_time=time.time()
         print(f'........{end_time}.调用大模型结束。耗时{end_time-start_time}')
         
         if not response or not isinstance(response,dict):
-            print('调用大模型失败,即将重试。。。',reponse)
+            print('调用大模型失败,即将重试。。。')
             continue
         
 
@@ -80,19 +86,20 @@ def agent_exec(query,max_call_times=10):
             print('最终回答：',final_answer)
             break
         
-        obersevation=response.get('thoughts').get('speak')
+        observation=response.get('thoughts').get('observation')
         try:
             """"action_name到函数的映射：map->{action_name:func}"""
             
             func=tools_map.get(action_name)
             observation=func(**action_args)
         except Exception as e:
-            print('调用工具函数失败',e)
+            print('调用工具函数失败,正在重新调用',e)
+            continue
         
-        agent_scracth=agent_scracth+'\n'+observation
-        user_msg="决定使用哪个工具"
-        assistant_message=parse_thought(reponse)
-        chat_history.append(user_msg,assistant_message)
+        agent_scracth=agent_scracth+'\n'+f"执行动作{func}完成，动作结果为：\n"+observation
+        user_msg=user_prompt
+        assistant_message=parse_thought(response)
+        chat_history.append([user_msg,assistant_message])
 def main():
     max_call_times=10
     while True:
@@ -100,4 +107,6 @@ def main():
         if query=="exit":
             break
         answer=agent_exec(query,max_call_times)
-        
+
+if __name__=="__main__":
+    main()

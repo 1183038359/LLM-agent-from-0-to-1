@@ -5,7 +5,7 @@
 """
 import os
 import json
-from tools import gen_tools_desc,get_workdir_root
+from tools import gen_tools_desc,_get_workdir_root
 contraints=[
     "有且仅能使用下面列出的动作",
     "你只能主动行动，在计划行动时需要考虑到这一点",
@@ -46,7 +46,8 @@ prompt_template="""
     最佳实践的说明：
     {best_pratices}
 
-    agent_scracth:{agent_scracth}
+    已完成动作状态:
+    {agent_scracth}
 
     你应该只以json格式响应，响应格式如下：
     {response_format_prompt}
@@ -56,21 +57,21 @@ prompt_template="""
 
 response_format_prompt="""
     {
-        "action"{
-            "name":"action name",
-            "args":{
-                "args_name":"args_value"
-            }
-        },
-        "thoughts":
-        {
-            "plan":"Briefly describe a list of short-term and long-term plans",
-            "criticism":"constructive self-criticism",
-            "speak":"Summary of the current step returned to the user",
-            "reasoning":"reasoning"
-        },
-        
-    }
+    "action": {
+        "name": "action名称 ",
+        "args": {
+            "args_name": "参数值"
+        }
+    },
+    "thoughts": {
+        "plan": "简要地描述短期和长期计划列表",
+        "criticism": "建设性的自我批评",
+        "observation": "总结当前完成步骤并返回给用户",
+        "reasoning": "推理"
+    },
+    "observation": "观察当前任务的总体进度"
+}
+
     """
 
 action_prompt=gen_tools_desc()
@@ -82,4 +83,4 @@ def gen_prompt(query,agent_scracth):
     prompt=prompt_template.format(query=query,constraints=contraints_prompt,actions=action_prompt,resources=resources_prompt,best_pratices=best_pratices_prompt,agent_scracth=agent_scracth,response_format_prompt=response_format_prompt)
     return prompt
 
-user_prompt="决定使用哪个工具"
+user_prompt="请根据给定的目标和迄今已完成的动作状态来决定下一步要执行的action，并使用前面指定的JSON模式进行响应。如果有任何疑问，请使用search功能获取更多信息。如果你已经完成了任务，请使用finish功能返回最终答案。"
