@@ -8,22 +8,21 @@ mp=ModelProvider()
 def parse_thought(response):
     """
     response:
-    {
-        "action"{
-            "name":"action_name",
-            "args":{
-                "args_name":"args_value"
-            }
-        },
-        "thoughts":
-        {
-            "text":"thought",
-            "plan":"plan",
-            "criticism":"criticism",
-            "observation":"当前步骤返回给用户的总结",
-            "reasoning":"reasoning"
+      {
+    "action": {
+        "name": "action名称 ",
+        "args": {
+            "args_name": "参数值"
         }
-    }
+    },
+    "thoughts": {
+        "plan": "简要地描述短期和长期计划列表",
+        "criticism": "建设性的自我批评",
+        "observation": "总结当前完成步骤并返回给用户",
+        "reasoning": "推理"
+    },
+    "total_observation": "观察当前任务的总体进度"
+}
     """
     try:
         thoughts=response.get('thoughts')
@@ -31,7 +30,8 @@ def parse_thought(response):
         plan=thoughts.get('plan')
         reasoning=thoughts.get('reasoning')
         criticism=thoughts.get('criticism')
-        prompt=f"plan:{plan}\nreasoning:{reasoning}\ncriticism:{criticism}\nobervation:{observation}"
+        total_obeservation=response.get('total_observation')
+        prompt=f"目前计划:{plan}\n推理:{reasoning}\n自我总结批评:{criticism}\n当前已完成步骤:{observation}\n目前总体进度:{total_obeservation}"
         return prompt
     except Exception as e:
         print('解析thoughts失败',e)

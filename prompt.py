@@ -69,7 +69,7 @@ response_format_prompt="""
         "observation": "总结当前完成步骤并返回给用户",
         "reasoning": "推理"
     },
-    "observation": "观察当前任务的总体进度"
+    "total_observation": "观察当前任务的总体进度"
 }
 
     """
