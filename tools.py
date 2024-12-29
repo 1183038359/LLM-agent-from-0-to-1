@@ -6,6 +6,7 @@
 import os
 import json
 from langchain_community.tools import TavilySearchResults
+
 """
 1.写文件
 2.读文件
@@ -51,6 +52,9 @@ def write_to_file(filename,content):
     return f"write content to {filename} success"
 
 
+
+def use_rag(query,topk=3):
+    
 
 
 
