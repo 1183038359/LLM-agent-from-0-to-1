@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen-agent Chat</title>
+    <style>
+        /* 基本全局样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            /* 背景渐变 */
+            background: linear-gradient(45deg, #8EC5FC, #E0C3FC);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto;
+        }
+
+        /* 页头标题与作者信息 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin: 20px 0 10px;
+            background: -webkit-linear-gradient(45deg, #2196F3, #E91E63);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: fadeIn 1s ease;
+        }
+        .author-info {
+            text-align: center;
+            font-size: 1rem;
+            margin-bottom: 20px;
+            color: rgba(0, 0, 0, 0.6);
+            animation: fadeIn 1.2s ease;
+        }
+
+        /* 页面容器 */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        /* 聊天框容器添加动态渐变光条 */
+        .chat-container {
+            position: relative;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+        }
+        /* 动态渐变光圈：利用伪元素 */
+        .chat-container::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 20px;
+            padding: 2px;  /* 光圈的宽度，可自行调整 */
+            background: linear-gradient(45deg, #f3ec78, #af4261, #2196F3, #E91E63);
+            /* 遮罩处理，留出中间的容器内容 */
+            -webkit-mask:
+                linear-gradient(#fff 0 0) content-box,
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        @keyframes spin {
+            0%   { transform: rotate(0deg);   }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 聊天内容容器：使用弹性布局，纵向排列 */
+        .chat-box {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;           /* 每条消息间距 */
+            height: 500px;       /* 固定高度，便于出现滚动条 */
+            overflow-y: auto;    /* 超过高度则出现滚动条 */
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* 消息气泡基础样式 */
+        .message {
+            position: relative;
+            padding: 15px;
+            border-radius: 15px;
+            animation: fadeIn 0.3s ease;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        /* 用户消息靠右 */
+        .user-message {
+            align-self: flex-end;      /* 右侧对齐 */
+            background: rgba(255, 255, 255, 0.3);
+            text-align: right;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* AI消息靠左 */
+        .ai-message {
+            align-self: flex-start;    /* 左侧对齐 */
+            background: rgba(255, 255, 255, 0.4);
+            text-align: left;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* 输入框与按钮容器 */
+        .input-container {
+            display: flex;
+            gap: 10px;
+            clear: both;
+        }
+
+        /* 输入框样式 */
+        input[type="text"] {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            font-size: 16px;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        /* 按钮样式 */
+        button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(45deg, #ffffff, #ece9e6);
+            color: #333;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: linear-gradient(45deg, #ece9e6, #ffffff);
+            transform: translateY(-2px);
+        }
+
+        /* “正在分析”提示文字 */
+        .loading-analysis-message {
+            text-align: center;
+            font-size: 1rem;
+            opacity: 0.7;
+            margin-bottom: 10px;
+            display: none; /* 默认隐藏 */
+        }
+
+        /* 渐隐动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 给AI加载中的消息做一个闪烁动画 */
+        .loading-message {
+            background: rgba(255, 255, 255, 0.4);
+            margin-right: auto;
+            padding: 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%   { opacity: 0.6; }
+            50%  { opacity: 1;   }
+            100% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+    <h1 class="title">Qwen-agent 大模型</h1>
+    <div class="author-info">
+        作者：zhaoyuhang <br>
+        邮箱：1183038359@qq.com
+    </div>
+    <div class="container chat-container">
+        <!-- 正在分析提示文字 -->
+        <div id="loadingMessage" class="loading-analysis-message">
+            正在分析，请耐心等待
+        </div>
+
+        <div class="chat-box" id="chatBox">
+            <!-- 聊天消息（动态添加） -->
+        </div>
+
+        <!-- 输入与按钮 -->
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="输入你的问题..." />
+            <button onclick="sendMessage()">发送</button>
+        </div>
+    </div>
+
+    <script>
+        // 发送消息函数
+        function sendMessage() {
+            const input = document.getElementById('userInput');
+            const chatBox = document.getElementById('chatBox');
+            const loadingDiv = document.getElementById('loadingMessage');
+            const message = input.value.trim();
+
+            if (message) {
+                // 1. 添加用户消息
+                const userDiv = document.createElement('div');
+                userDiv.className = 'message user-message';
+                userDiv.textContent = message;
+                chatBox.appendChild(userDiv);
+
+                // 清空输入框
+                input.value = '';
+
+                // 自动滚动到底部
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // 2. 显示“正在分析”提示
+                loadingDiv.style.display = 'block';
+
+                // 3. 调用后端接口 (fetch 为示例, 请根据实际后端改写)
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 隐藏“正在分析”提示
+                    loadingDiv.style.display = 'none';
+
+                    // 4. 添加AI回复
+                    const aiDiv = document.createElement('div');
+                    aiDiv.className = 'message ai-message';
+                    aiDiv.textContent = data.response;
+                    chatBox.appendChild(aiDiv);
+
+                    // 滚动到底部
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .catch(error => {
+                    loadingDiv.style.display = 'none';
+
+                    console.error('Error:', error);
+                    // 发生错误时提示
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'message ai-message';
+                    errorDiv.textContent = "发生错误，请重试";
+                    chatBox.appendChild(errorDiv);
+                });
+            }
+        }
+
+        // 回车键发送
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import os
 from dashscope.api_entities.dashscope_response import Message
 from prompt import user_prompt
 import dashscope
+import re
 import json
 from dotenv import load_dotenv
 load_dotenv('.env')
@@ -31,8 +32,11 @@ class ModelProvider:
                     model=self.model_name, # 模型列表：https://help.aliyun.com/zh/model-studio/getting-started/models
                     messages=messages,
                     )
-                print('response:',response)
-                content=json.loads(response['output']['text'])
+                
+                response=re.search(r'(\{.*\})',response['output']['text'],re.DOTALL).group(0)
+                
+                content=json.loads(response)
+                print('content:',content)
                 return content
             except Exception as e:
                 print(f'chat调用失败，{e}')
